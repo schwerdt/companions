@@ -47,6 +47,7 @@ func main() {
 	}
 	defer db.Close()
 
+	// Write some data
 	catType := PetType{PetType: "Cat"}
 	db.Where(catType).Find(&catType)
 
@@ -76,6 +77,19 @@ func main() {
 	if dbc.Error != nil {
 		fmt.Println("error saving the dog:", err)
 	}
+
+	// Read some data
+	animal := Animal{}
+	dbc = db.Preload("Dog").Preload("Cat").Where(Animal{Id: 11}).Find(&animal)
+	if dbc.Error != nil {
+		fmt.Println("error reading from DB", err)
+	}
+	fmt.Println(animal)
+	printAnimal(animal)
 }
 
-
+func printAnimal(animal Animal) {
+	fmt.Println("Id", animal.Id)
+	fmt.Println("DogID", animal.DogId)
+	fmt.Println("Dog", animal.Dog)
+}
