@@ -47,38 +47,35 @@ func main() {
 	}
 	defer db.Close()
 
-	petType := PetType{PetType: "Cat"}
-	db.Where(petType).Find(&petType)
+	catType := PetType{PetType: "Cat"}
+	db.Where(catType).Find(&catType)
 
-	guardian := Guardian{Name: "Christine"}
+	guardian := Guardian{Name: "Gophie"}
 	cat := Pet{
-		Name: "Mittens",
-		PetType: petType,
+		Name: "Lionini",
+		PetType: catType,
 		PetGuardians: []*PetGuardian{ {Guardian: &guardian, PrimaryGuardian: true }},
 	}
 
-	animal := Animal{Cat: cat}
-	fmt.Println(animal)
-	dbc := db.Create(&animal)
+	catAnimal := Animal{Cat: cat}
+	dbc := db.Create(&catAnimal)
 	if dbc.Error != nil {
-		fmt.Println("there was an error saving:", err)
+		fmt.Println("error saving the cat:", err)
 	}
 
 	dogType := PetType{PetType: "Dog"}
 	db.Where(dogType).Find(&dogType)
 
 	dog := Pet{
-		Name: "Sunny",
+		Name: "Wolfini",
 		PetType: dogType,
 		PetGuardians: []*PetGuardian{ {Guardian: &guardian, PrimaryGuardian: false }},
 	}
-	anotherAnimal := Animal{Dog: dog}
-	dbc = db.Create(&anotherAnimal)
+	dogAnimal := Animal{Dog: dog}
+	dbc = db.Create(&dogAnimal)
 	if dbc.Error != nil {
-		fmt.Println("error saving sunny:", err)
+		fmt.Println("error saving the dog:", err)
 	}
-
-
 }
 
 
