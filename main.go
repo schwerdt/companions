@@ -6,91 +6,110 @@ import(
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-type Animal struct {
+type Companionship struct {
 	Id int
-	DogId *int
-	CatId *int
-	Dog Pet
-	Cat Pet
-}
-
-type Pet struct {
-	Id int
-	Name string
-	PetTypeId *int
-	PetType PetType
-	PetGuardians []*PetGuardian
-}
-
-type Guardian struct {
-	Id int
-	Name string
-}
-
-type PetGuardian struct {
-	Pet *Pet
 	PetId *int
-	Guardian *Guardian
 	GuardianId *int
-	PrimaryGuardian bool
+	Pet Creature
+	Guardian Creature
 }
 
-type PetType struct {
+type Creature struct {
 	Id int
-	PetType string
+	Name string
+	CreatureTypeId *int
+	CreatureType CreatureType
+	CreatureHobbies []*CreatureHobby
+	CreatureFoods []*CreatureFood
+}
+
+type CreatureType struct {
+	Id int
+	CreatureType string
+}
+
+type CreatureHobby struct {
+	Creature *Creature
+	CreatureId *int
+	Hobby *Hobby
+	HobbyId *int
+	FavoriteHobby bool
+}
+
+type CreatureFood struct {
+	Creature *Creature
+	CreatureId *int
+	Food *Food
+	FoodId *int
+	FavoriteFood bool
+}
+
+type Hobby struct {
+	Id int
+	Hobby string
+}
+
+type Food struct {
+	Id int
+	Food string
 }
 
 func main() {
-	db, err := gorm.Open("postgres", "host=localhost port=5432 user=postgres dbname=animals sslmode=disable")
+	db, err := gorm.Open("postgres", "host=localhost port=5432 user=postgres dbname=companionships sslmode=disable")
 	if err != nil {
 		fmt.Println(err)
 	}
 	defer db.Close()
 
-	// Write some data
-	catType := PetType{PetType: "Cat"}
-	db.Where(catType).Find(&catType)
 
-	guardian := Guardian{Name: "Gophie"}
-	cat := Pet{
-		Name: "Lionini",
-		PetType: catType,
-		PetGuardians: []*PetGuardian{ {Guardian: &guardian, PrimaryGuardian: true }},
-	}
+	catCreatureType := CreatureType{CreatureType: "Cat"}
+	db.Where(catCreatureType).Find(&catCreatureType)
 
-	catAnimal := Animal{Cat: cat}
-	dbc := db.Create(&catAnimal)
+	gorillaCreatureType := CreatureType{CreatureType: "Gorilla"}
+	db.Where(gorillaCreatureType).Find(&gorillaCreatureType)
+
+	hobbyClimbing := Hobby{Hobby: "Climbing"}
+	hobbyPurring := Hobby{Hobby: "Purring"}
+
+	foodTuna := Food{Food: "Tuna"}
+	foodBamboo := Food{Food: "Bamboo Shoots"}
+
+
+	guardianCreature := Creature{
+				Name: "Koko",
+				CreatureType: gorillaCreatureType,
+				CreatureHobbies: []*CreatureHobby{{Hobby: &hobbyClimbing, FavoriteHobby: true}},
+				CreatureFoods: []*CreatureFood{{Food: &foodBamboo, FavoriteFood: false}},
+			}
+	petCreature := Creature{
+				Name: "All Ball",
+				CreatureType: catCreatureType,
+				CreatureHobbies: []*CreatureHobby{{Hobby: &hobbyPurring, FavoriteHobby: false}},
+				CreatureFoods: []*CreatureFood{{Food: &foodTuna, FavoriteFood: true}},
+			}
+	companionship := Companionship{
+				Pet: petCreature,
+				Guardian: guardianCreature,
+			}
+	dbc := db.Create(&companionship)
 	if dbc.Error != nil {
-		fmt.Println("error saving the cat:", err)
+		fmt.Println("error saving companionship", dbc.Error)
 	}
 
-	dogType := PetType{PetType: "Dog"}
-	db.Where(dogType).Find(&dogType)
 
-	dog := Pet{
-		Name: "Wolfini",
-		PetType: dogType,
-		PetGuardians: []*PetGuardian{ {Guardian: &guardian, PrimaryGuardian: false }},
-	}
-	dogAnimal := Animal{Dog: dog}
-	dbc = db.Create(&dogAnimal)
+	//Read some data
+	companions := Companionship{}
+	dbc = db.Preload("Guardian").Preload("Pet").Preload("Guardian.CreatureType").Preload("Pet.CreatureType").Preload("Pet.CreatureHobbies").Preload("Guardian.CreatureHobbies").Preload("Guardian.CreatureHobbies.Hobby").Where(Companionship{Id: 1}).Find(&companions)
 	if dbc.Error != nil {
-		fmt.Println("error saving the dog:", err)
+		fmt.Println("error reading:", dbc.Error)
 	}
-
-	// Read some data
-	animal := Animal{}
-	dbc = db.Preload("Dog").Preload("Cat").Preload("Dog.PetType").Preload("Dog.PetGuardians.Guardian").Where(Animal{Id: 11}).Find(&animal)
-	if dbc.Error != nil {
-		fmt.Println("error reading from DB", err)
-	}
-	fmt.Println(animal)
-	printAnimal(animal)
+	printCompanionship(companions)
 }
 
-func printAnimal(animal Animal) {
-	fmt.Println("Id", animal.Id)
-	fmt.Println("DogID", animal.DogId)
-	fmt.Println("Dog", animal.Dog)
-	fmt.Println("Guardians", animal.Dog.PetGuardians[0].Guardian)
+func printCompanionship(companionship Companionship) {
+      fmt.Println("Companions:")
+      fmt.Println("Pet:", companionship.Pet.Name)
+      fmt.Println("Guardian:", companionship.Guardian.Name)
+      fmt.Println("Pet Hobbies:", companionship.Pet.CreatureHobbies[0])
+      fmt.Println("Guardian Hobbies:", companionship.Guardian.CreatureHobbies[0])
 }
